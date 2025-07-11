@@ -1,11 +1,11 @@
-from flask import Flask, render_template, request, redirect, url_for, session, send_file
+from flask import Flask, render_template, request, redirect, url_for, session, send_file, flash
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 import csv
 import io
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'
+app.secret_key = 'a4900da6dca4422ca9a5082eb6eefbdb'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///bugs.db'
 db = SQLAlchemy(app)
 
@@ -34,12 +34,29 @@ def register():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
+        confirm_password = request.form['confirm_password']
+
+        # Check if passwords match
+        if password != confirm_password:
+            flash("Passwords do not match")
+            return render_template('register.html')
+
+        # Check if username already exists
+        if User.query.filter_by(username=username).first():
+            flash("Username already exists")
+            return render_template('register.html')
+
+        # Hash and save user
         hashed_pw = generate_password_hash(password)
         new_user = User(username=username, password_hash=hashed_pw)
         db.session.add(new_user)
         db.session.commit()
+
+        flash("Registration successful. Please log in.")
         return redirect(url_for('login'))
+
     return render_template('register.html')
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
